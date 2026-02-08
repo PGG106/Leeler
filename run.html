@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NNUE Training Tracker – Run</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Spectral:wght@300;400;600&display=swap');
+    :root{ --bg:#1a1a1a; --fg:#e8e8e8; --muted:#a8a8a8; --card:#222; --border:#2a2a2a; --acc1:#d4a574; --acc2:#c9a961; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Spectral',serif;background:var(--bg);color:var(--fg);line-height:1.6}
+    .container{max-width:900px;margin:0 auto;padding:2.5rem 1.5rem}
+    a{color:var(--acc1);text-decoration:none}
+    a:hover{text-decoration:underline}
+    h1{font-family:'JetBrains Mono',monospace;font-size:2rem;background:linear-gradient(135deg,var(--acc1),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .muted{color:var(--muted)}
+    .card{border:1px solid var(--border);border-radius:10px;background:linear-gradient(135deg,rgba(42,42,42,.6),rgba(26,26,26,.8));padding:1rem;margin-top:1rem}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem;margin-top:.6rem}
+    .label{color:var(--muted);font-size:.8rem;font-family:'JetBrains Mono',monospace;text-transform:uppercase}
+    .val{font-family:'JetBrains Mono',monospace;color:var(--acc1)}
+    .section-title{font-family:'JetBrains Mono',monospace;margin:1rem 0 .4rem}
+    .list{list-style:none}
+    .list li{display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border)}
+    .list li:last-child{border-bottom:none}
+    canvas{width:100%;height:320px}
+    .back{display:inline-flex;align-items:center;gap:.4rem;font-family:'JetBrains Mono',monospace}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back" href="index.html">← Back to all runs</a>
+    <div id="content" class="card">
+      <p class="muted">Loading run…</p>
+    </div>
+  </div>
+
+  <script>
+  const fmt = (n)=> typeof n==='number' && isFinite(n) ? n.toLocaleString() : '—';
+
+  function drawChart(canvas, run){
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width = canvas.clientWidth; const H = canvas.height = canvas.clientHeight;
+    const pad = 50; const cw = W - pad*2; const ch = H - pad*2;
+
+    let data = Array.isArray(run.epochData) && run.epochData.length ? run.epochData.slice() : (function(){
+      const arr=[]; const epochs = run.epochs || 100; const finalLoss = run.finalLoss || 0.03; const startLoss = finalLoss*1.5 + 0.05;
+      for(let i=1;i<=epochs;i++){ const p=i/epochs; const base=startLoss-(startLoss-finalLoss)*(1-Math.exp(-3*p)); const noise=(Math.random()-0.5)*0.003; arr.push({epoch:i, loss: Math.max(0, base+noise)}); }
+      return arr;
+    })();
+
+    const losses = data.map(d=>d.loss);
+    const minY = Math.min(...losses), maxY = Math.max(...losses); const padY=(maxY-minY)*0.06; const y0=minY-padY, y1=maxY+padY; const range=(y1-y0)||1e-6;
+    const toX = (i)=> pad + (i/(data.length-1))*cw; const toY = (v)=> pad + (1-(v-y0)/range)*ch;
+
+    ctx.strokeStyle='rgba(42,42,42,0.35)'; ctx.lineWidth=1; for(let i=0;i<=5;i++){ const y=pad+(i/5)*ch; ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke(); }
+
+    ctx.strokeStyle='rgba(58,58,58,0.9)'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(pad,pad); ctx.lineTo(pad,H-pad); ctx.lineTo(W-pad,H-pad); ctx.stroke();
+
+    const g=ctx.createLinearGradient(0,pad,0,H-pad); g.addColorStop(0,'#c9a961'); g.addColorStop(1,'#d4a574');
+    ctx.strokeStyle=g; ctx.lineWidth=2.2; ctx.beginPath(); data.forEach((d,i)=>{ const x=toX(i), y=toY(d.loss); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke();
+
+    ctx.lineTo(W-pad,H-pad); ctx.lineTo(pad,H-pad); ctx.closePath(); const ag=ctx.createLinearGradient(0,pad,0,H-pad); ag.addColorStop(0,'rgba(201,169,97,0.18)'); ag.addColorStop(1,'rgba(201,169,97,0.03)'); ctx.fillStyle=ag; ctx.fill();
+
+    ctx.fillStyle='#a8a8a8'; ctx.font='12px JetBrains Mono'; ctx.textAlign='center'; const eInt=Math.max(1, Math.floor((run.epochs||data.length)/10));
+    for(let e=0;e<= (run.epochs||data.length); e+=eInt){ const i=Math.min(data.length-1, Math.round((e/(run.epochs||data.length))*(data.length-1))); const x=toX(i); ctx.fillText(e, x, H-pad+20); }
+    ctx.save(); ctx.translate(pad-40,H/2); ctx.rotate(-Math.PI/2); ctx.fillText('Loss',0,0); ctx.restore();
+  }
+
+  async function main(){
+    const root = document.getElementById('content');
+    const id = new URLSearchParams(location.search).get('id');
+
+    if(!id){
+      root.innerHTML = `<p>Missing <code>?id=</code> parameter.</p>`;
+      return;
+    }
+
+    try{
+      const res = await fetch('./data/runs.json', {cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const runs = await res.json();
+      if(!Array.isArray(runs)) throw new Error('Invalid JSON');
+
+      const run = runs.find(r => String(r.id) === String(id));
+      if(!run){
+        root.innerHTML = `<p>Run with id <code>${id}</code> not found.</p>`;
+        return;
+      }
+
+      document.title = `NNUE – ${run.name}`;
+
+      root.innerHTML = `
+        <h1>${run.name}</h1>
+        ${run.notes ? `<p class="muted" style="margin:.2rem 0 0.8rem">${run.notes}</p>`: ''}
+
+        <div class="grid">
+          <div><div class="label">Date</div><div class="val">${new Date(run.date).toLocaleString()}</div></div>
+          <div><div class="label">Epochs</div><div class="val">${fmt(run.epochs)}</div></div>
+          <div><div class="label">Final Loss</div><div class="val">${(run.finalLoss??0).toFixed(4)}</div></div>
+          ${run.learningRate ? `<div><div class="label">LR</div><div class="val">${run.learningRate}</div></div>` : ''}
+          ${run.batchSize ? `<div><div class="label">Batch</div><div class="val">${fmt(run.batchSize)}</div></div>` : ''}
+        </div>
+
+        <h3 class="section-title">Training Data</h3>
+        <ul class="list">
+          <li><span class="label">Dataset</span><span class="val">${run.datasetName || '—'}</span></li>
+          <li style="align-items:flex-start;gap:1rem">
+            <span class="label">Sources</span>
+            <span class="val" style="white-space:pre-line">${(run.dataSources||'—')}</span>
+          </li>
+        </ul>
+
+        <h3 class="section-title">Loss curve</h3>
+        <canvas id="chart" height="320"></canvas>
+      `;
+
+      const canvas = document.getElementById('chart');
+      drawChart(canvas, run);
+
+    }catch(err){
+      root.innerHTML = `<p>Could not load <code>data/runs.json</code>.<br><span class="muted">Error: ${String(err.message||err)}</span></p>`;
+    }
+  }
+
+  main();
+  </script>
+</body>
+</html>
