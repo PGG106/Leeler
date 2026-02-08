@@ -48,10 +48,8 @@
   function eloSection(elo){
     if (!elo || typeof elo !== 'object') return '';
     const cls = (typeof elo.diff === 'number') ? (elo.diff>0?'pos': (elo.diff<0?'neg':'zero')) : 'zero';
-    const diff = (typeof elo.diff === 'number') ? (elo.diff>0?`+${fmt(elo.diff)}`: `${fmt(elo.diff)}`) : '—';
-    const se = (typeof elo.stdev === 'number') ? ` ±${fmt(elo.stdev)}` : '';
-    const games = (typeof elo.games === 'number') ? `${fmt(elo.games)} games` : '';
-    const method = elo.method ? `${elo.method}` : '';
+    const diff = (typeof elo.diff === 'number') ? (elo.diff>0?`${fmt(elo.diff)}`: `${fmt(elo.diff)}`) : '—';
+    const se = (typeof elo.stdev === 'number') ? ` ± ${fmt(elo.stdev)}` : '';
     const opp = elo.opponent ? `${elo.opponent}` : 'baseline';
     const tc = elo.timeControl ? `${elo.timeControl}` : '';
     const link = elo.link ? `<a href="${elo.link}" target="_blank" rel="noopener">details</a>` : '';
@@ -60,11 +58,9 @@
       <h3 class="section-title">Elo result</h3>
       <div class="elo">
         <div class="pill ${cls}">
-          <div class="label">Elo vs ${opp}</div>
+          <div class="label">SPRT RESULT</div>
           <div class="val" style="font-size:1.05rem;margin-top:.2rem">${diff}${se}</div>
         </div>
-        ${games ? `<div class="pill"><div class="label">Games</div><div class="val" style="margin-top:.2rem">${games}</div></div>` : ''}
-        ${method ? `<div class="pill"><div class="label">Method</div><div class="val" style="margin-top:.2rem">${method}</div></div>` : ''}
         ${tc ? `<div class="pill"><div class="label">Time control</div><div class="val" style="margin-top:.2rem">${tc}</div></div>` : ''}
         ${link ? `<div class="pill"><div class="label">Link</div><div class="val" style="margin-top:.2rem">${link}</div></div>` : ''}
       </div>
@@ -128,15 +124,13 @@
 
         <div class="grid">
           <div><div class="label">Date</div><div class="val">${new Date(run.date).toLocaleString()}</div></div>
-          <div><div class="label">Epochs</div><div class="val">${fmt(run.epochs)}</div></div>
-          <div><div class="label">Final Loss</div><div class="val">${(run.finalLoss??0).toFixed(4)}</div></div>
+          <div><div class="label">SBS</div><div class="val">${fmt(run.superbatches)}</div></div>
           ${run.learningRate ? `<div><div class="label">LR</div><div class="val">${run.learningRate}</div></div>` : ''}
-          ${run.batchSize ? `<div><div class="label">Batch</div><div class="val">${fmt(run.batchSize)}</div></div>` : ''}
         </div>
 
         <h3 class="section-title">Training Data</h3>
         <ul class="list">
-          <li><span class="label">Dataset</span><span class="val">${run.datasetName || '—'}</span></li>
+          <li><span class="val">${run.datasetName || '—'}</span></li>
         </ul>
 
         ${eloSection(run.elo)}

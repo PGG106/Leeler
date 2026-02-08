@@ -134,24 +134,14 @@
 
   <div class="right">
     <div class="metric">
-      <div class="label">Epochs</div>
-      <div class="val">${fmt(run.epochs)}</div>
-    </div>
-    <div class="metric">
-      <div class="label">Final Loss</div>
-      <div class="val">${(+run.finalLoss||0).toFixed(4)}</div>
+      <div class="label">SBS</div>
+      <div class="val">${fmt(run.superbatches)}</div>
     </div>
     ${run.learningRate ? `
       <div class="metric">
         <div class="label">LR</div>
         <div class="val">${run.learningRate}</div>
       </div>` : ''}
-    ${run.batchSize ? `
-      <div class="metric">
-        <div class="label">Batch</div>
-        <div class="val">${fmt(run.batchSize)}</div>
-      </div>` : ''}
-
     ${eloMetric(run.elo)}
   </div>
 </a>`;
