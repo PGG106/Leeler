@@ -60,8 +60,8 @@
   "datasetName": "Mixed Lichess + Selfplay",
   "notes": "First run with larger batch; switched to cosine anneal at epoch 80.",
   "elo": {
-    "diff": 34,                 
-    "stdev": 12,                 
+    "diff": 34.5,                 
+    "stdev": 12.3,                 
     "games": 5000,               
     "method": "SPRT LLR",       
     "opponent": "baseline-2025Q4",

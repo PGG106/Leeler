@@ -105,8 +105,7 @@
       if (!elo || typeof elo.diff !== 'number') return '';
       const cls  = elo.diff > 0 ? 'elo-pos' : (elo.diff < 0 ? 'elo-neg' : 'elo-zero');
       const sign = elo.diff > 0 ? '' : '-';
-      const se   = (typeof elo.stdev === 'number') ? ` ± ${elo.stdev}` : '';
-      const opp  = safeStr(elo.opponent, 'baseline');
+      const se = (typeof elo.stdev === 'number') ? ` ± ${fmt(elo.stdev)}` : '';       const opp  = safeStr(elo.opponent, 'baseline');
       return `
         <div class="metric ${cls}">
           <div class="label">SPRT</div>
