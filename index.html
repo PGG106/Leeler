@@ -10,6 +10,7 @@
       --card:#222; --border:#2a2a2a; --acc1:#d4a574; --acc2:#c9a961;
       --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
       --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --win:#3fb950; --loss:#f85149; --neutral:#a8a8a8;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--bg); color: var(--fg); font: 16px/1.5 var(--sans); }
@@ -36,7 +37,7 @@
     }
     a.card:hover { transform: translateY(-1px); border-color: #3a3a3a; }
 
-    /* Left side: title, date, optional notes, dataset/sources */
+    /* Left: title, date, notes, dataset/sources */
     .left { min-width: 0; flex: 1 1 auto; }
     .topline { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
     .name { font-weight: 700; font-size: 1.05rem; }
@@ -46,7 +47,7 @@
     .kv .label { color: var(--muted); text-transform: uppercase; font-size: .72rem; letter-spacing: .04em; }
     .kv .val { color: var(--acc1); font-family: var(--mono); }
 
-    /* Right side: compact metrics */
+    /* Right: compact metrics */
     .right {
       flex: 0 0 auto;
       display: grid;
@@ -64,7 +65,12 @@
     .metric .label { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; }
     .metric .val { color: var(--acc1); font-family: var(--mono); font-size: .98rem; margin-top: .15rem; }
 
-    /* Mobile: stack right column under left */
+    /* Elo metric coloring */
+    .metric.elo-pos .val { color: var(--win); }
+    .metric.elo-neg .val { color: var(--loss); }
+    .metric.elo-zero .val { color: var(--neutral); }
+
+    /* Mobile: stack right under left */
     @media (max-width: 720px) {
       a.card { flex-direction: column; }
       .right {
@@ -95,6 +101,20 @@
     const fmt = (n) => (typeof n === 'number' && isFinite(n)) ? n.toLocaleString() : '—';
     const safeStr = (v, fallback='—') => (typeof v === 'string' && v.trim()) ? v : fallback;
 
+    function eloMetric(elo) {
+      if (!elo || typeof elo.diff !== 'number') return '';
+      const cls  = elo.diff > 0 ? 'elo-pos' : (elo.diff < 0 ? 'elo-neg' : 'elo-zero');
+      const sign = elo.diff > 0 ? '' : '-';
+      const se   = (typeof elo.stdev === 'number') ? ` ± ${elo.stdev}` : '';
+      const opp  = safeStr(elo.opponent, 'baseline');
+      return `
+        <div class="metric ${cls}">
+          <div class="label">SPRT</div>
+          <div class="val">${sign}${fmt(elo.diff)}${se}</div>
+        </div>
+      `;
+    }
+
     function cardHTML(run) {
       const href = `run.html?id=${encodeURIComponent(String(run.id))}`;
       const sources = (typeof run.dataSources === 'string' ? run.dataSources : '')
@@ -103,42 +123,44 @@
       const more = sources.length > 3 ? ' …' : '';
 
       return `
-        <a class="card" href="${href}">
-          <div class="left">
-            <div class="topline">
-              <div class="name">${safeStr(run.name)}</div>
-              <div class="date">${new Date(run.date).toLocaleDateString()}</div>
-            </div>
-            ${safeStr(run.notes,'') ? `<p class="notes">${run.notes}</p>` : ''}
+<a class="card" href="${href}">
+  <div class="left">
+    <div class="topline">
+      <div class="name">${safeStr(run.name)}</div>
+      <div class="date">${new Date(run.date).toLocaleDateString()}</div>
+    </div>
 
-            <div class="kv">
-              <div><span class="label">Dataset</span> <span class="val">${safeStr(run.datasetName)}</span></div>
-              <div><span class="label">Sources</span> <span class="val">${shown || '—'}${more}</span></div>
-            </div>
-          </div>
+    ${safeStr(run.notes,'') ? `<p class="notes">${run.notes}</p>` : ''}
 
-          <div class="right">
-            <div class="metric">
-              <div class="label">Epochs</div>
-              <div class="val">${fmt(run.epochs)}</div>
-            </div>
-            <div class="metric">
-              <div class="label">Final Loss</div>
-              <div class="val">${(+run.finalLoss||0).toFixed(4)}</div>
-            </div>
-            ${run.learningRate ? `
-              <div class="metric">
-                <div class="label">LR</div>
-                <div class="val">${run.learningRate}</div>
-              </div>` : ''}
-            ${run.batchSize ? `
-              <div class="metric">
-                <div class="label">Batch</div>
-                <div class="val">${fmt(run.batchSize)}</div>
-              </div>` : ''}
-          </div>
-        </a>
-      `;
+    <div class="kv">
+      <div><span class="label">Dataset</span> <span class="val">${safeStr(run.datasetName)}</span></div>
+      <div><span class="label">Sources</span> <span class="val">${shown || '—'}${more}</span></div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="metric">
+      <div class="label">Epochs</div>
+      <div class="val">${fmt(run.epochs)}</div>
+    </div>
+    <div class="metric">
+      <div class="label">Final Loss</div>
+      <div class="val">${(+run.finalLoss||0).toFixed(4)}</div>
+    </div>
+    ${run.learningRate ? `
+      <div class="metric">
+        <div class="label">LR</div>
+        <div class="val">${run.learningRate}</div>
+      </div>` : ''}
+    ${run.batchSize ? `
+      <div class="metric">
+        <div class="label">Batch</div>
+        <div class="val">${fmt(run.batchSize)}</div>
+      </div>` : ''}
+
+    ${eloMetric(run.elo)}
+  </div>
+</a>`;
     }
 
     (async () => {
@@ -156,7 +178,10 @@
           root.innerHTML = `
             <div class="card-inline">
               <p>No runs found in <code>data/runs.json</code>.</p>
-              <p class="notice" style="margin-top:.4rem">Add objects with at least <code>id</code>, <code>name</code>, <code>date</code>, <code>epochs</code>, and <code>finalLoss</code>.</p>
+              <p class="notice" style="margin-top:.4rem">
+                Add objects with at least <code>id</code>, <code>name</code>, <code>date</code>, <code>epochs</code>, and <code>finalLoss</code>.
+                Optional: <code>elo</code> block.
+              </p>
             </div>`;
           return;
         }
@@ -169,7 +194,7 @@
       } catch (err) {
         root.innerHTML = `
           <div class="card-inline">
-            <p>Could not load <code>data/runs.json</code> from <code>${DATA_URL}</code>.</p>
+            <p>Could not load <code>data/runs.json</code>.</p>
             <p class="notice" style="margin-top:.4rem">Error: ${String(err && err.message || err)}</p>
           </div>`;
       }
@@ -177,4 +202,3 @@
   </script>
 </body>
 </html>
-``
