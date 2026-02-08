@@ -15,7 +15,6 @@
     "notes": "Initial baseline with standard architecture. Using HalfKP feature set.",
     "date": "2025-01-05T10:00:00.000Z",
     "datasetName": "Lichess-2025-01 HalfKP",
-    "dataSources": "s3://datasets/lichess/2025-01/halfkp",
     "epochData": []
   },
   {
@@ -34,7 +33,6 @@
     "notes": "Increased batch size and hidden layer width. Added gradient clipping. Training stability improved significantly.",
     "date": "2025-01-07T10:00:00.000Z",
     "datasetName": "Lichess-2025-01 HalfKP",
-    "dataSources": "s3://datasets/lichess/2025-01/halfkp\nhttps://example.com/augment.csv",
     "epochData": []
   },
   {
@@ -53,7 +51,6 @@
     "notes": "Added layer normalization and dropout (0.1). Deeper network converges better. Weight decay = 0.01. Best results so far!",
     "date": "2025-01-08T10:00:00.000Z",
     "datasetName": "Mixed self-play + Lichess",
-    "dataSources": "/mnt/data/selfplay/run42\ns3://datasets/lichess/2025-02/halfkp",
     "epochData": []
   },
   {
@@ -65,7 +62,6 @@
   "learningRate": "1e-3 → 1e-5 cosine",
   "batchSize": 4096,
   "datasetName": "Mixed Lichess + Selfplay",
-  "dataSources": "lichess-2025-12.ndjson\nselfplay-2026-01.shards\nccrl-evals-2025Q4",
   "notes": "First run with larger batch; switched to cosine anneal at epoch 80.",
   "elo": {
     "diff": 34,                 
