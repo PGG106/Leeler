@@ -37,7 +37,7 @@
     }
     a.card:hover { transform: translateY(-1px); border-color: #3a3a3a; }
 
-    /* Left: title, date, notes, dataset/sources */
+    /* Left: title, date, notes, dataset */
     .left { min-width: 0; flex: 1 1 auto; }
     .topline { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
     .name { font-weight: 700; font-size: 1.05rem; }
@@ -117,11 +117,6 @@
 
     function cardHTML(run) {
       const href = `run.html?id=${encodeURIComponent(String(run.id))}`;
-      const sources = (typeof run.dataSources === 'string' ? run.dataSources : '')
-        .split('\n').filter(Boolean);
-      const shown = sources.slice(0,3).join(' · ');
-      const more = sources.length > 3 ? ' …' : '';
-
       return `
 <a class="card" href="${href}">
   <div class="left">
@@ -134,7 +129,6 @@
 
     <div class="kv">
       <div><span class="label">Dataset</span> <span class="val">${safeStr(run.datasetName)}</span></div>
-      <div><span class="label">Sources</span> <span class="val">${shown || '—'}${more}</span></div>
     </div>
   </div>
 
