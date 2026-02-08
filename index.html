@@ -1,145 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>NNUE Training Tracker – Public Board</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Spectral:wght@300;400;600&display=swap');
-    :root{ --bg:#1a1a1a; --fg:#e8e8e8; --muted:#a8a8a8; --card:#222; --border:#2a2a2a; --acc1:#d4a574; --acc2:#c9a961; }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Spectral',serif;background:var(--bg);color:var(--fg);line-height:1.6}
-    .container{max-width:1200px;margin:0 auto;padding:2.5rem 1.5rem}
-    h1{font-family:'JetBrains Mono',monospace;font-size:2.4rem;background:linear-gradient(135deg,var(--acc1),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .subtitle{color:var(--muted)}
-    .toolbar{display:flex;gap:.6rem;align-items:center;margin:1rem 0 1.2rem}
-    .notice{font-family:'JetBrains Mono',monospace;font-size:.9rem;color:var(--muted)}
-    .runs{display:grid;gap:1rem}
-    .card-link{display:block;text-decoration:none;color:inherit}
-    .card{border:1px solid var(--border);border-radius:10px;background:linear-gradient(135deg,rgba(42,42,42,.6),rgba(26,26,26,.8));padding:1rem;transition:transform .08s ease, border-color .12s ease}
-    .card:hover{transform:translateY(-2px);border-color:#3a3a3a}
-    .row{display:flex;justify-content:space-between;align-items:start}
-    .name{font-family:'JetBrains Mono',monospace;font-size:1.2rem}
-    .date{color:var(--muted);font-family:'JetBrains Mono',monospace}
-    .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.6rem;margin-top:.6rem}
-    .label{color:var(--muted);font-size:.8rem;font-family:'JetBrains Mono',monospace;text-transform:uppercase}
-    .val{font-family:'JetBrains Mono',monospace;color:var(--acc1)}
-    .detail{margin-top:1.2rem;border-top:1px solid var(--border);padding-top:1rem}
-    .section-title{font-family:'JetBrains Mono',monospace;margin:.4rem 0}
-    .list{list-style:none}
-    .list li{display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border)}
-    .list li:last-child{border-bottom:none}
-    .muted{color:var(--muted)}
-    canvas{width:100%;height:260px}
+    :root {
+      --bg:#1a1a1a; --fg:#e8e8e8; --muted:#a8a8a8;
+      --card:#222; --border:#2a2a2a; --acc1:#d4a574; --acc2:#c9a961;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--fg); font: 16px/1.5 var(--sans); }
+    .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem 3rem; }
+
+    h1 {
+      font-weight: 800; font-size: 2rem; letter-spacing: .2px;
+      background: linear-gradient(135deg,var(--acc1),var(--acc2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: var(--muted); margin: .35rem 0 1.25rem; }
+
+    /* === Vertical list === */
+    .runs { display: flex; flex-direction: column; gap: .9rem; }
+
+    /* Each card is a horizontal box */
+    a.card {
+      display: flex; gap: 1rem; align-items: flex-start; justify-content: space-between;
+      text-decoration: none; color: inherit;
+      border: 1px solid var(--border); border-radius: 12px;
+      background: linear-gradient(135deg, rgba(42,42,42,.6), rgba(26,26,26,.8));
+      padding: 1rem 1.1rem;
+      transition: transform .08s ease, border-color .12s ease, background .12s ease;
+    }
+    a.card:hover { transform: translateY(-1px); border-color: #3a3a3a; }
+
+    /* Left side: title, date, optional notes, dataset/sources */
+    .left { min-width: 0; flex: 1 1 auto; }
+    .topline { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+    .name { font-weight: 700; font-size: 1.05rem; }
+    .date { color: var(--muted); font-size: .9rem; white-space: nowrap; }
+    .notes { color: var(--muted); margin: .35rem 0 .5rem; }
+    .kv { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .92rem; }
+    .kv .label { color: var(--muted); text-transform: uppercase; font-size: .72rem; letter-spacing: .04em; }
+    .kv .val { color: var(--acc1); font-family: var(--mono); }
+
+    /* Right side: compact metrics */
+    .right {
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(120px,1fr));
+      gap: .5rem;
+      align-content: start;
+      margin-left: 1rem;
+    }
+    .metric {
+      background: rgba(0,0,0,.12);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .55rem .65rem;
+    }
+    .metric .label { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; }
+    .metric .val { color: var(--acc1); font-family: var(--mono); font-size: .98rem; margin-top: .15rem; }
+
+    /* Mobile: stack right column under left */
+    @media (max-width: 720px) {
+      a.card { flex-direction: column; }
+      .right {
+        width: 100%;
+        grid-template-columns: repeat(2, minmax(140px,1fr));
+        margin-left: 0;
+      }
+    }
+
+    .card-inline {
+      border: 1px solid var(--border); border-radius: 12px;
+      background: linear-gradient(135deg, rgba(42,42,42,.6), rgba(26,26,26,.8));
+      padding: 1rem 1.1rem;
+    }
+    .notice { color: var(--muted); font-size: .9rem; }
+    code { background: #00000026; padding: 0 .25rem; border-radius: 4px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>NNUE Training Tracker – Public Board</h1>
-    <p class="subtitle">Read‑only public view. Data is served from <code>data/runs.json</code>.</p>
+    <p class="subtitle">Read‑only public view. Data comes from <code>data/runs.json</code>. Click a run to see details.</p>
 
-    <div class="toolbar">
-      <span class="notice">Maintainers: update <code>data/runs.json</code> in the repo to publish new nets.</span>
-    </div>
-
-    <div id="content"></div>
+    <div id="content" class="card-inline"><p>Loading runs…</p></div>
   </div>
 
-  <script>
-  const UI = {
-    fmt(n){ return typeof n==='number' && isFinite(n) ? n.toLocaleString() : '—'; },
-    card(run){
-      const href = `run.html?id=${encodeURIComponent(run.id)}`;
+  <script type="module">
+    const fmt = (n) => (typeof n === 'number' && isFinite(n)) ? n.toLocaleString() : '—';
+    const safeStr = (v, fallback='—') => (typeof v === 'string' && v.trim()) ? v : fallback;
+
+    function cardHTML(run) {
+      const href = `run.html?id=${encodeURIComponent(String(run.id))}`;
+      const sources = (typeof run.dataSources === 'string' ? run.dataSources : '')
+        .split('\n').filter(Boolean);
+      const shown = sources.slice(0,3).join(' · ');
+      const more = sources.length > 3 ? ' …' : '';
+
       return `
-<a class="card-link" href="${href}">
-  <div class="card">
-    <div class="row">
-      <div class="name">${run.name}</div>
-      <div class="date">${new Date(run.date).toLocaleDateString()}</div>
-    </div>
-    ${run.notes ? `<p class="muted" style="margin:.4rem 0 0.6rem">${run.notes}</p>`: ''}
+        <a class="card" href="${href}">
+          <div class="left">
+            <div class="topline">
+              <div class="name">${safeStr(run.name)}</div>
+              <div class="date">${new Date(run.date).toLocaleDateString()}</div>
+            </div>
+            ${safeStr(run.notes,'') ? `<p class="notes">${run.notes}</p>` : ''}
 
-    <div class="metrics">
-      <div><div class="label">Epochs</div><div class="val">${UI.fmt(run.epochs)}</div></div>
-      <div><div class="label">Final Loss</div><div class="val">${(run.finalLoss??0).toFixed(4)}</div></div>
-      ${run.learningRate ? `<div><div class="label">LR</div><div class="val">${run.learningRate}</div></div>`:''}
-      ${run.batchSize ? `<div><div class="label">Batch</div><div class="val">${UI.fmt(run.batchSize)}</div></div>`:''}
-    </div>
+            <div class="kv">
+              <div><span class="label">Dataset</span> <span class="val">${safeStr(run.datasetName)}</span></div>
+              <div><span class="label">Sources</span> <span class="val">${shown || '—'}${more}</span></div>
+            </div>
+          </div>
 
-    <div class="detail">
-      <h4 class="section-title">Training Data Used</h4>
-      <ul class="list">
-        <li><span class="muted">Dataset</span><span class="val">${run.datasetName || '—'}</span></li>
-        <li><span class="muted">Sources</span><span class="val">${
-          (run.dataSources||'—').split('
-').filter(Boolean).slice(0,3).join(' · ')
-          + (((run.dataSources||'').split('
-').filter(Boolean).length>3)?' …':'')
-        }</span></li>
-      </ul>
-    </div>
-
-    <div class="detail">
-      <h4 class="section-title">Loss curve</h4>
-      <canvas data-id="${run.id}" height="260"></canvas>
-    </div>
-  </div>
-</a>`;
-    },
-    drawChart(canvas, run){
-      const ctx = canvas.getContext('2d');
-      const W = canvas.width = canvas.clientWidth; const H = canvas.height = canvas.clientHeight;
-      const pad = 50; const cw = W - pad*2; const ch = H - pad*2;
-
-      let data = Array.isArray(run.epochData) && run.epochData.length ? run.epochData.slice() : (function(){
-        const arr=[]; const epochs = run.epochs || 100; const finalLoss = run.finalLoss || 0.03; const startLoss = finalLoss*1.5 + 0.05;
-        for(let i=1;i<=epochs;i++){ const p=i/epochs; const base=startLoss-(startLoss-finalLoss)*(1-Math.exp(-3*p)); const noise=(Math.random()-0.5)*0.003; arr.push({epoch:i, loss: Math.max(0, base+noise)}); }
-        return arr;
-      })();
-
-      const losses = data.map(d=>d.loss);
-      const minY = Math.min(...losses), maxY = Math.max(...losses); const padY=(maxY-minY)*0.06; const y0=minY-padY, y1=maxY+padY; const range=(y1-y0)||1e-6;
-      const toX = (i)=> pad + (i/(data.length-1))*cw; const toY = (v)=> pad + (1-(v-y0)/range)*ch;
-
-      ctx.strokeStyle='rgba(42,42,42,0.35)'; ctx.lineWidth=1; for(let i=0;i<=5;i++){ const y=pad+(i/5)*ch; ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke(); }
-
-      ctx.strokeStyle='rgba(58,58,58,0.9)'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(pad,pad); ctx.lineTo(pad,H-pad); ctx.lineTo(W-pad,H-pad); ctx.stroke();
-
-      const g=ctx.createLinearGradient(0,pad,0,H-pad); g.addColorStop(0,'#c9a961'); g.addColorStop(1,'#d4a574');
-      ctx.strokeStyle=g; ctx.lineWidth=2.2; ctx.beginPath(); data.forEach((d,i)=>{ const x=toX(i), y=toY(d.loss); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke();
-
-      ctx.lineTo(W-pad,H-pad); ctx.lineTo(pad,H-pad); ctx.closePath(); const ag=ctx.createLinearGradient(0,pad,0,H-pad); ag.addColorStop(0,'rgba(201,169,97,0.18)'); ag.addColorStop(1,'rgba(201,169,97,0.03)'); ctx.fillStyle=ag; ctx.fill();
-
-      ctx.fillStyle='#a8a8a8'; ctx.font='12px JetBrains Mono'; ctx.textAlign='center'; const eInt=Math.max(1, Math.floor((run.epochs||data.length)/10));
-      for(let e=0;e<= (run.epochs||data.length); e+=eInt){ const i=Math.min(data.length-1, Math.round((e/(run.epochs||data.length))*(data.length-1))); const x=toX(i); ctx.fillText(e, x, H-pad+20); }
-      ctx.save(); ctx.translate(pad-40,H/2); ctx.rotate(-Math.PI/2); ctx.fillText('Loss',0,0); ctx.restore();
-    }
-  };
-
-  async function main(){
-    const root = document.getElementById('content');
-    root.innerHTML = '<p class="notice">Loading shared data…</p>';
-    let runs;
-
-    try{
-      const res = await fetch('./data/runs.json', {cache:'no-store'});
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      runs = await res.json();
-      if(!Array.isArray(runs)) throw new Error('Invalid JSON');
-    }catch(err){
-      root.innerHTML = `<div class="card"><p>Could not load <code>data/runs.json</code>. Create it in your repo to publish runs.<br><span class="muted">Error: ${String(err.message||err)}</span></p></div>`;
-      return;
+          <div class="right">
+            <div class="metric">
+              <div class="label">Epochs</div>
+              <div class="val">${fmt(run.epochs)}</div>
+            </div>
+            <div class="metric">
+              <div class="label">Final Loss</div>
+              <div class="val">${(+run.finalLoss||0).toFixed(4)}</div>
+            </div>
+            ${run.learningRate ? `
+              <div class="metric">
+                <div class="label">LR</div>
+                <div class="val">${run.learningRate}</div>
+              </div>` : ''}
+            ${run.batchSize ? `
+              <div class="metric">
+                <div class="label">Batch</div>
+                <div class="val">${fmt(run.batchSize)}</div>
+              </div>` : ''}
+          </div>
+        </a>
+      `;
     }
 
-    runs.sort((a,b)=> new Date(b.date) - new Date(a.date));
-    root.innerHTML = `<div class="runs">${runs.map(UI.card).join('')}</div>`;
+    (async () => {
+      const root = document.getElementById('content');
+      const DATA_URL = new URL('data/runs.json', location.href).toString();
 
-    runs.forEach(run=>{
-      const canvas = document.querySelector(`canvas[data-id="${run.id}"]`);
-      if (canvas) UI.drawChart(canvas, run);
-    });
-  }
-  main();
+      try {
+        const res = await fetch(DATA_URL, { cache: 'no-store' });
+        const text = await res.text();
+        const json = JSON.parse(text);
+        if (!Array.isArray(json)) throw new Error('Invalid JSON: expected an array');
+
+        const runs = json.filter(r => r && r.id != null && r.name && r.date);
+        if (!runs.length) {
+          root.innerHTML = `
+            <div class="card-inline">
+              <p>No runs found in <code>data/runs.json</code>.</p>
+              <p class="notice" style="margin-top:.4rem">Add objects with at least <code>id</code>, <code>name</code>, <code>date</code>, <code>epochs</code>, and <code>finalLoss</code>.</p>
+            </div>`;
+          return;
+        }
+
+        // newest first
+        runs.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+        // render vertical list of horizontal cards
+        root.innerHTML = `<div class="runs">${runs.map(cardHTML).join('')}</div>`;
+      } catch (err) {
+        root.innerHTML = `
+          <div class="card-inline">
+            <p>Could not load <code>data/runs.json</code> from <code>${DATA_URL}</code>.</p>
+            <p class="notice" style="margin-top:.4rem">Error: ${String(err && err.message || err)}</p>
+          </div>`;
+      }
+    })();
   </script>
 </body>
 </html>
+``
